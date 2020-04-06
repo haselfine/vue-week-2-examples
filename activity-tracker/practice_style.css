@@ -2,3 +2,15 @@
     max-height: 250px;
     overflow: scroll;
 }
+
+.activity-painting {
+    color: red
+}
+
+.activity-sketching {
+    color: blue
+}
+
+.activity-drawing {
+    color: green
+}

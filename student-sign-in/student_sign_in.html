@@ -21,11 +21,11 @@
 
                 <div class="form-group">
                     <label for="name">Name</label>
-                    <input id="name" class="form-control" v-model.trim="newStudentName">
+                    <input id="name" class="form-control" v-model.trim="newStudentName"> <!--attach to v-model-->
                 </div>
                 <div class="form-group">
                     <label for="starID">Star ID</label>
-                    <input id="starID" class="form-control" v-model.trim="newStarID">
+                    <input id="starID" class="form-control" v-model.trim="newStarID"> <!--attach to v-model-->
                 </div>
                 <button class="btn btn-primary" v-on:click="addStudent">Add</button>
         </div>
@@ -39,17 +39,17 @@
                         <th>StarID</th>
                         <th>Present?</th>
                     </tr>
-                    <tr v-for="student in students" v-bind:class="{ present: student.present, absent: !student.present }">
+                    <tr v-for="student in students" v-bind:class="{ present: student.present, absent: !student.present }"> <!--each student will have the attribute of present or absent-->
                         <td>{{ student.name }}</td>
                         <td>{{ student.starID }}</td>
-                        <td> <input type="checkbox" v-model="student.present" v-on:change="checked(student)"></td>
+                        <td> <input type="checkbox" v-model="student.present" v-on:change="checked(student)"></td> <!--when present is checked or unchecked, message appears-->
                     </tr>
                 </table>
             </div>
         </div>
 
         <transition name="fade">
-            <div class="alert alert-success" v-if="seeMessage">{{message}} {{mostRecentSignIn}}</div>
+            <div class="alert alert-success" v-if="seeMessage">{{message}} {{mostRecentSignIn}}</div> <!--display message-->
         </transition>
     </div>
 
@@ -60,7 +60,7 @@
             data: {
                 newStudentName: '',
                 newStarID: '',
-                students: [{ name: "example", starID: "ab1234cd", present: true }],
+                students: [{ name: "example", starID: "ab1234cd", present: true }], //example for new users
                 mostRecentSignIn: '',
                 message: '',
                 seeMessage: false,
@@ -69,26 +69,33 @@
             methods: {
                 addStudent() {
                     this.errors = []
-                    if (this.newStudentName && this.newStarID) {
+                    
+                    if(!this.newStudentName) {
+                        this.errors.push('Name is required.') //if no name, add error to error list
+                    }
+                    if(!this.newStarID){
+                        this.errors.push('StarId is required') //if no starId, add error to error list
+                    }
+                    if (this.errors.length == 0) { //if no errors, proceed
+                        this.newStudentName = this.newStudentName.toLowerCase() //make entire string lowercase
+                        this.newStudentName = this.newStudentName.charAt(0).toUpperCase() + this.newStudentName.slice(1) //capitalize first letter, concatenate rest of name
                         let student = { name: this.newStudentName, starID: this.newStarID, present: false }
                         this.students.push(student)
                         this.students.sort(function (s1, s2) { return s1.name > s2.name ? 1 : -1 })
                         this.newStudentName = ''
                         this.newStarID = ''
-                    } else {
-                        this.errors.push('Name and StarID are required.')
                     }
                 },
                 checked(student) {
-                    this.message = student.present ? 'Welcome, ' : 'Goodbye, '
-                    this.mostRecentSignIn = student.name
+                    this.message = student.present ? 'Welcome, ' : 'Goodbye, ' //if present then welcomes, otherwise says goodbye
+                    this.mostRecentSignIn = student.name //send student name to message function
                     this.showMessage()
                 },
                 showMessage() {
                     this.seeMessage = true
                     setTimeout(() => {
                         this.seeMessage = false
-                    }, 3000)
+                    }, 3000) //show for three seconds
                 }
             },
         })

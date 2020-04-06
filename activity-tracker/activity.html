@@ -13,7 +13,7 @@
 <body>
     <div id="app">
 
-        <h1 class="text-center">{{ activity }}! Time Tracker</h1>
+        <h1 class="text-center">{{ activity }}! Time Tracker</h1> //show activity name, could be changed easily
 
         <div id="add-hours" class="card">
 
@@ -24,7 +24,7 @@
 
                     <!-- show error alert with list of errors,
                          if there are errors in the form -->
-                    <div class = "alert alert-danger" v-show = "errors && errors.length > 0">
+                    <div class = "alert alert-danger" v-show = "errors && errors.length > 0"> 
                         <li v-for = "error in errors">{{ error }}</li>
 
                     </div>
@@ -46,8 +46,14 @@
                         <!-- create a select. v-model type -->
                         <!-- create one option for each type  -->
                         <select class = "form-control" v-model = "type">
-                            <option v-for = "type in types" v-bind:value = "type">{{ type }}</option>
+                            <option v-for ="type in types" >{{ type }}</option>
                         </select>
+                    </div>
+
+                    <div class = "form-group">
+                        <!--new checkbox input for whether complete or in progress-->
+                        <input type = "checkbox" id = "checkbox" class = "form-check-input" v-model = "completeInProgress" true-value = "complete" false-value = "incomplete"> <!--assign true and false values-->
+                        <label class = "form-check-label" for = "complete">{{ complete }}</label>
                     </div>
 
                     <div class="form-check-inline">
@@ -62,8 +68,13 @@
                         <label class="form-check-label" for="v1">{{ digital }}</label>
                     </div>
 
+                    <div class = "form-group">
+                        <label class = "form-text-input" id = "note">Note:</label>
+                        <input type = "text" id = "note" class = "form-text-input" v-model = "note">
+                    </div>
+
                     <div>
-                        <!-- v-on click event -->
+                        <!-- v-on click event, sends to submit() -->
                         <button class="btn btn-primary mt-2" type="button" v-on:click = "submit" >Add record</button>
                     </div>
 
@@ -85,12 +96,16 @@
                             <th>How long?</th>
                             <th>Type</th>
                             <th>Digital or traditional?</th>
+                            <th>Complete or in progress?</th> //new
+                            <th>Note</th> //new
                         </tr>
-                        <tr>
+                        <tr v-for = "record in activityRecords" v-bind:class = "'activity-'+record.type"> //binds class for css modification
                             <td>{{ record.when | shortDateFormat }}</td>
-                            <td>{{ record.howLong }}</td>
+                            <td>{{ record.howLong | shortHours }}</td> //new shortHours filter, shows to the nearest hundredth
                             <td>{{ record.type }}</td>
                             <td>{{ record.digitalTraditional }}</td>
+                            <td>{{ record.complete }}</td>
+                            <td>{{ record.note | fortyCharacters }}</td> //shortens note display to 40 characters
                         </tr>
                     </table>
                 </div>
@@ -103,11 +118,13 @@
 
             <div class="card-body">
                 <!-- use computed property to display total hours -->
-                <p>You have practiced a total of {{ totalHours }} hours, broken down as follows:</p>
+                <p>You have practiced a total of {{ totalHours | shortHours }} hours, broken down as follows:</p>
                 
                 <!-- computed property to display total for each type  -->
                 <ul class = "list-group list-group-flush">
-                    <li class = "list-group-item" v-for = "hours, type in totalHoursByType">{{ type }}: {{ hours }}</li>
+                    <li class = "list-group-item" v-for = "hours, type in totalHoursByType" v-bind:class = "'activity-'+type"> //bind class for css modification
+                        {{ type }}: {{ hours | shortHours }}
+                    </li>
                 </ul>
                 
             </div>
@@ -117,83 +134,96 @@
 
     <script>
 
-      let app = new Vue({
-          el: '#app',
-          data: {
-              activity: 'Practice Art',
-              when: '',
-              howLong: 1,
-              type: 'sketching',
-              digitalTraditional: 'traditional',
-              activityRecords: [],
-              types: ['sketching', 'painting', 'drawing'],
-              digital: 'digital',
-              traditional: 'traditional',
-              errors: []
-          },
-          computed: {
-              whenLocal() {
-                  let date = new Date(this.when)
-                  let timeStamp = date.getTime() + (date.getTimezoneOffset * 60 * 1000)
-                  let localDate = new Date(timestamp)
-                  return localDate
-              },
-              totalHours(){
-                  let total = 0
-                  if(this.activityRecords.length > 0){
-                      total = this.activityRecords.reduce(function (hoursAccumulator, currentRecord){
-                          return hoursAccumulator + currentRecord.howLong
-                      }, 0)
-                  }
-                  return total
-              },
-              totalHoursByType(){
-                  let hoursByType = {}
-                  this.types.forEach(type => {
-                      let totalForType = this.activityRecords
-                      .filter(function (record) {return record.type === type })
-                      .reduce(function (accumulator, current) {return accumulator + current.howLong}, 0)
-                      hoursByType[type] = totalForType
-                  })
-                  return hoursByType
-              }
-          },
-          methods: {
-              submit(){
-                  
-                this.errors = []
+        let app = new Vue({
+            el: '#app',
+            data: {
+                activity: 'Practice Art',
+                when: '',
+                howLong: 1,
+                type: 'sketching',
+                digitalTraditional: 'traditional',
+                activityRecords: [],
+                types: ['sketching', 'painting', 'drawing'],
+                traditional: 'traditional',
+                completeInProgress: 'in progress',
+                complete: 'complete',
+                inProgress: 'in progress',
+                note: '',
+                errors: []
+            },
+            methods: {
+                submit(){
+                    
+                    this.errors = []
 
-                if(this.whenLocal == 'Invalid Date' || this.whenLocal.getTime() > new Date().getTime()){
-                    this.errors.push('Select a valid date, today or in the past')
-                }
-
-                if(typeof (this.howLong) != 'number' || this.howLong <= 0){
-                    this.errors.push('The number of hours must be a number greater than zero.')
-                }
-
-                if(this.errors.length == 0){
-                    let record = {
-                        when: this.whenLocal,
-                        howLong: this.howLong,
-                        type: this.type,
-                        digitalTraditional: this.digitalTraditional
+                    if(this.whenLocal == 'Invalid Date' || this.whenLocal.getTime() > new Date().getTime()){ //check for valid date in past
+                        this.errors.push('Select a valid date, today or in the past')
                     }
-                    this.activityRecords.push(record)
-                    this.activityRecords.sort(function (r1, r2){
-                        return r1.when.getTime() - r2.when.getTime()
-                    })
+
+                    if(typeof (this.howLong) != 'number' || this.howLong <= 0){ //check for positive hours
+                        this.errors.push('The number of hours must be a number greater than zero.')
+                    }
+
+                    if(this.errors.length == 0){
+                        let record = {
+                            when: Date.parse(this.when), //added parse() because it was saying "invalid date" otherwise
+                            howLong: this.howLong,
+                            type: this.type,
+                            digitalTraditional: this.digitalTraditional,
+                            complete: this.completeInProgress,
+                            note: this.note
+                        }
+                        this.activityRecords.push(record)
+                        this.activityRecords.sort(function (r1, r2){
+                            return r1.when.getTime() - r2.when.getTime()
+                        })
+                    }
                 }
-              }
-          },
-          filters: {
-              lowercase(text){
-                  return text.toLowerCase()
-              },
-              shortDateFormat(date){
-                  return new Intl.DateTimeFormat().format(date)
-              }
-          }
-      })
+            },
+            computed: {
+                whenLocal() { //configure date to more workable format
+                    let date = new Date(this.when)
+                    let timestamp = date.getTime() + (date.getTimezoneOffset() * 60 * 1000)
+                    let localDate = new Date(timestamp)
+                    return localDate
+                },
+                totalHours(){ //compute total hours
+                    let total = 0
+                    if(this.activityRecords.length > 0){
+                        total = this.activityRecords.reduce(function (hoursAccumulator, currentRecord){
+                            return hoursAccumulator + currentRecord.howLong
+                        }, 0)
+                    }
+                    return total
+                },
+                totalHoursByType(){ //add total hours, type to list
+                    let hoursByType = {}
+                    this.types.forEach(type => {
+                        let totalForType = this.activityRecords
+                            .filter(function (record) {return record.type === type })
+                            .reduce(function (accumulator, current) {return accumulator + current.howLong}, 0)
+                        hoursByType[type] = totalForType
+                    })
+                    return hoursByType
+                }
+            },
+            filters: {
+                lowercase(text){
+                    return text.toLowerCase()
+                },
+                shortDateFormat(date){ //convert date to more readable format
+                    return new Intl.DateTimeFormat().format(date)
+                },
+                fortyCharacters(note){ //shorten display of note to only 40 characters or less
+                    if(note.length >= 40){
+                        return note.substring(0,40) + '...'
+                    }
+                },
+                shortHours(hours){ //set hour display to 2 decimal points
+                    return hours.toFixed(2)
+                }
+            }
+        })
 
     </script>
 
